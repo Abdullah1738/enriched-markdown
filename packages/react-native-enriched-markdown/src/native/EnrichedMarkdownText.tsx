@@ -142,6 +142,7 @@ export const EnrichedMarkdownText = ({
   onLinkLongPress,
   onImagePress,
   onDocumentAssets,
+  resolveImageSource,
   onTaskListItemPress,
   enableTaskListItemToggle = true,
   onCopyPress,
@@ -464,8 +465,10 @@ export const EnrichedMarkdownText = ({
       normalizedStreamingConfig,
       flavor,
       !!onDocumentAssets,
+      !!resolveImageSource,
     ]),
-    flavor === 'github' ? onDocumentAssets : undefined
+    flavor === 'github' ? onDocumentAssets : undefined,
+    flavor === 'github' ? resolveImageSource : undefined
   );
 
   if (flavor === 'github') {

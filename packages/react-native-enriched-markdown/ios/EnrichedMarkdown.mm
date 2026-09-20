@@ -5,6 +5,7 @@
 #import "ENRMAtomicSize.h"
 #import "ENRMDocumentAssets.h"
 #import "ENRMImageAttachment.h"
+#import "ENRMImageSources.h"
 #import "ENRMLatexErrorCoordinator.h"
 #import "ENRMLinkContextMenus.h"
 #import "ENRMLinkRegexProps.h"
@@ -159,6 +160,11 @@ static char kENRMSegmentFadeAnimatorKey;
   NSInteger _documentRevision;
   NSInteger _renderedDocumentRevision;
   BOOL _enableDocumentAssets;
+  BOOL _enableImageSourceResolution;
+  NSInteger _imageSourcesRevision;
+  NSInteger _imageSourcesContinuityStart;
+  NSDictionary *_imageSources;
+
   NSArray<NSDictionary *> *_documentAssets;
   NSArray<NSDictionary *> *_lastEmittedAssets;
   NSInteger _lastEmittedAssetsRevision;
@@ -195,6 +201,9 @@ static char kENRMSegmentFadeAnimatorKey;
     _isGFM = defaultProps->isGFM;
     _linkRegex = ENRMLinkRegexConfigFromProps(defaultProps->linkRecognition.text);
     _inlineCodeLinkRegex = ENRMLinkRegexConfigFromProps(defaultProps->linkRecognition.inlineCode);
+    _imageSourcesRevision = -1;
+    _imageSourcesContinuityStart = 1;
+    _imageSources = @{};
     _renderedDocumentRevision = -1;
     _lastEmittedAssetsRevision = -1;
     _segmentViews = [NSMutableArray array];
@@ -761,6 +770,11 @@ static char kENRMSegmentFadeAnimatorKey;
 
   NSInteger revision = _documentRevision;
   BOOL enableDocumentAssets = _enableDocumentAssets;
+  BOOL enableImageSourceResolution = _enableImageSourceResolution && isGFM;
+  BOOL imageSourcesAccepted =
+      _imageSourcesRevision >= _imageSourcesContinuityStart && _imageSourcesRevision <= revision;
+  NSDictionary *imageSources = [_imageSources copy];
+
   __block NSArray<NSDictionary *> *documentAssets = @[];
   __block NSArray<ENRMRenderedSegment *> *renderedSegments = nil;
   __block NSString *renderableMarkdown = nil;
@@ -786,8 +800,9 @@ static char kENRMSegmentFadeAnimatorKey;
         if (!ast)
           return NO;
 
-        if (enableDocumentAssets)
+        if (enableDocumentAssets || enableImageSourceResolution)
           documentAssets = ENRMPrepareDocumentAssets(ast);
+        ENRMPrepareImageSources(ast, documentAssets, enableImageSourceResolution, imageSourcesAccepted, imageSources);
         renderedSegments = ENRMRenderSegmentsFromAST(ast, config, allowTrailingMargin, allowFontScaling,
                                                      maxFontSizeMultiplier, lineBreakStrategy,
                                                      /*blockquoteContent*/ NO);
@@ -823,6 +838,11 @@ static char kENRMSegmentFadeAnimatorKey;
     return nil;
   }
 
+  NSArray *assets = _enableImageSourceResolution && _isGFM ? ENRMPrepareDocumentAssets(ast) : @[];
+  ENRMPrepareImageSources(ast, assets, _enableImageSourceResolution && _isGFM,
+                          _imageSourcesRevision >= _imageSourcesContinuityStart &&
+                              _imageSourcesRevision <= _documentRevision,
+                          _imageSources);
   NSArray<ENRMRenderedSegment *> *segments =
       ENRMRenderSegmentsFromAST(ast, _config, _allowTrailingMargin, _fontScaleObserver.allowFontScaling,
                                 _maxFontSizeMultiplier, _lineBreakStrategy, /*blockquoteContent*/ NO);
@@ -1141,6 +1161,18 @@ static char kENRMSegmentFadeAnimatorKey;
     _dirtyFlags |= ENRMDirtyRender;
   }
 
+  NSDictionary *imageSources = ENRMImageSourcesFromProps(newViewProps);
+  if (_enableImageSourceResolution != newViewProps.enableImageSourceResolution ||
+      _imageSourcesRevision != newViewProps.imageSourcesRevision ||
+      _imageSourcesContinuityStart != newViewProps.imageSourcesContinuityStart ||
+      ![_imageSources isEqualToDictionary:imageSources]) {
+    _enableImageSourceResolution = newViewProps.enableImageSourceResolution;
+    _imageSourcesRevision = newViewProps.imageSourcesRevision;
+    _imageSourcesContinuityStart = newViewProps.imageSourcesContinuityStart;
+    _imageSources = imageSources;
+    _dirtyFlags |= ENRMDirtyRecreateSegments | ENRMDirtyForceHeight | ENRMDirtyRender;
+  }
+
   if (_config == nil) {
     _config = [[StyleConfig alloc] init];
     [_config setFontScaleMultiplier:_fontScaleObserver.effectiveFontScale];
@@ -1155,10 +1187,7 @@ static char kENRMSegmentFadeAnimatorKey;
 
   if (ENRMImageRequestHeadersChanged(oldViewProps.imageRequestHeaders, newViewProps.imageRequestHeaders)) {
     [_config setImageRequestHeaders:ENRMImageRequestHeadersFromProps(newViewProps.imageRequestHeaders)];
-    _dirtyFlags |= ENRMDirtyRender;
-    if (!markdownChanged) {
-      _dirtyFlags |= ENRMDirtyRecreateSegments;
-    }
+    _dirtyFlags |= ENRMDirtyRecreateSegments | ENRMDirtyForceHeight | ENRMDirtyRender;
   }
 
   // Pill labels change layout, so treat new content like a style change.
@@ -1406,6 +1435,10 @@ static char kENRMSegmentFadeAnimatorKey;
   _lastEmittedAssets = nil;
   _lastEmittedAssetsRevision = -1;
   _renderedDocumentRevision = -1;
+  _imageSources = nil;
+  _imageSourcesRevision = -1;
+  _imageSourcesContinuityStart = 1;
+  _enableImageSourceResolution = NO;
   _documentRevision = 0;
   _enableDocumentAssets = NO;
   _config = nil;
