@@ -12,6 +12,10 @@ import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.uimanager.StateWrapper
 import com.swmansion.enriched.markdown.accessibility.AccessibilityLabels
 import com.swmansion.enriched.markdown.math.LatexErrorReporter
+import com.swmansion.enriched.markdown.media.DocumentAsset
+import com.swmansion.enriched.markdown.media.DocumentAssets
+import com.swmansion.enriched.markdown.media.documentAssetsEventData
+import com.swmansion.enriched.markdown.media.emitMediaEvent
 import com.swmansion.enriched.markdown.parser.Md4cFlags
 import com.swmansion.enriched.markdown.parser.Parser
 import com.swmansion.enriched.markdown.segments.BlockquoteContainerView
@@ -59,6 +63,26 @@ class EnrichedMarkdown(
   private val videoContainerClass: Class<*>? by lazy { SegmentViewCreators.videoContainerClass() }
 
   private var currentRenderId = 0L
+  private var documentRevision = 0
+  private var enableDocumentAssets = false
+  private var acceptedRevision = -1
+  private var acceptedAssets = emptyList<DocumentAsset>()
+  private var lastAssetManifest: Pair<Int, List<DocumentAsset>>? = null
+
+  fun setDocumentRevision(value: Int) {
+    if (documentRevision == value) return
+    documentRevision = value
+    ++currentRenderId
+    renderPending = true
+  }
+
+  fun setEnableDocumentAssets(value: Boolean) {
+    if (enableDocumentAssets == value) return
+    enableDocumentAssets = value
+    lastAssetManifest = null
+    renderPending = true
+  }
+
   private val dirtyFlags = EnumSet.noneOf(DirtyFlag::class.java)
   var streamingAnimation: Boolean = false
 
@@ -148,6 +172,7 @@ class EnrichedMarkdown(
   fun setMarkdownContent(markdown: String) {
     if (currentMarkdown == markdown) return
     currentMarkdown = markdown
+    ++currentRenderId
     renderPending = true
   }
 
@@ -391,7 +416,11 @@ class EnrichedMarkdown(
   }
 
   private fun scheduleRenderIfNeeded() {
-    if (currentMarkdown.isNotEmpty()) scheduleRender()
+    if (currentMarkdown.isNotEmpty()) {
+      scheduleRender()
+    } else {
+      applyEmptyDocument(documentRevision)
+    }
   }
 
   private fun scheduleRender() {
@@ -403,6 +432,10 @@ class EnrichedMarkdown(
 
     val textLinkRegex = linkRegex
     val codeLinkRegex = inlineCodeLinkRegex
+    val revision = documentRevision
+    val flags = md4cFlags
+    val gfm = isGFM
+    val assetEventsEnabled = enableDocumentAssets
     val renderId = ++currentRenderId
 
     executor.execute {
@@ -417,16 +450,17 @@ class EnrichedMarkdown(
         val hasPendingCodeBlock = filtered?.endsInsideOpenCodeFence ?: false
 
         if (renderableMarkdown.isEmpty()) {
-          postToMain(renderId) { applyRenderedSegments(emptyList(), false) }
+          postToMain(renderId) { applyEmptyDocument(revision) }
           return@execute
         }
 
         val ast =
-          parser.parseMarkdown(renderableMarkdown, md4cFlags, isGFM, textLinkRegex, codeLinkRegex) ?: run {
-            postToMain(renderId) { applyRenderedSegments(emptyList(), false) }
+          parser.parseMarkdown(renderableMarkdown, flags, gfm, textLinkRegex, codeLinkRegex) ?: run {
+            postToMain(renderId) { applyEmptyDocument(revision) }
             return@execute
           }
 
+        val assets = if (assetEventsEnabled) DocumentAssets.collect(ast).assets else emptyList()
         val segments = splitASTIntoSegments(ast)
         val renderedSegments =
           MarkdownSegmentRenderer.render(
@@ -438,10 +472,16 @@ class EnrichedMarkdown(
             onLatexError = latexErrorReporter,
           )
 
-        postToMain(renderId) { applyRenderedSegments(renderedSegments, hasPendingCodeBlock) }
+        postToMain(renderId) {
+          if (revision != documentRevision) return@postToMain
+          acceptedRevision = revision
+          acceptedAssets = assets
+          applyRenderedSegments(renderedSegments, hasPendingCodeBlock)
+          if (assetEventsEnabled) publishAssets(revision, assets)
+        }
       } catch (e: Exception) {
         Log.e(TAG, "Render failed", e)
-        postToMain(renderId) { applyRenderedSegments(emptyList(), false) }
+        postToMain(renderId) { applyEmptyDocument(revision) }
       }
     }
   }
@@ -659,6 +699,7 @@ class EnrichedMarkdown(
     b: Int,
   ) {
     layoutSegments()
+    if (acceptedRevision == documentRevision) publishAssets(acceptedRevision, acceptedAssets)
   }
 
   fun onImageLayoutChanged() {
@@ -673,7 +714,29 @@ class EnrichedMarkdown(
     wrapper.updateState(state)
   }
 
+  private fun applyEmptyDocument(revision: Int) {
+    if (revision != documentRevision) return
+    acceptedRevision = revision
+    acceptedAssets = emptyList()
+    applyRenderedSegments(emptyList(), false)
+    publishAssets(revision, emptyList())
+  }
+
+  private fun publishAssets(
+    revision: Int,
+    assets: List<DocumentAsset>,
+  ) {
+    if (!enableDocumentAssets) return
+    val manifest = revision to assets
+    if (lastAssetManifest == manifest) return
+    if (emitMediaEvent(this, "onDocumentAssets", documentAssetsEventData(revision, assets))) {
+      lastAssetManifest = manifest
+    }
+  }
+
   fun cleanup() {
+    ++currentRenderId
+    mainHandler.removeCallbacksAndMessages(null)
     executor.shutdownNow()
   }
 

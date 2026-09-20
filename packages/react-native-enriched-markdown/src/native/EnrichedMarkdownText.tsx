@@ -1,3 +1,4 @@
+import { useDocumentAssets } from './useDocumentAssets';
 import { useMemo, useCallback, useRef, useEffect } from 'react';
 import EnrichedMarkdownTextNativeComponent from '../EnrichedMarkdownTextNativeComponent';
 import type { MarkdownStyleInternal } from '../EnrichedMarkdownTextNativeComponent';
@@ -140,6 +141,7 @@ export const EnrichedMarkdownText = ({
   onLinkPress,
   onLinkLongPress,
   onImagePress,
+  onDocumentAssets,
   onTaskListItemPress,
   enableTaskListItemToggle = true,
   onCopyPress,
@@ -454,8 +456,20 @@ export const EnrichedMarkdownText = ({
     ...rest,
   };
 
+  const assets = useDocumentAssets(
+    JSON.stringify([
+      markdown,
+      normalizedMd4cFlags,
+      streamingAnimation,
+      normalizedStreamingConfig,
+      flavor,
+      !!onDocumentAssets,
+    ]),
+    flavor === 'github' ? onDocumentAssets : undefined
+  );
+
   if (flavor === 'github') {
-    return <EnrichedMarkdownNativeComponent {...sharedProps} />;
+    return <EnrichedMarkdownNativeComponent {...sharedProps} {...assets} />;
   }
 
   return <EnrichedMarkdownTextNativeComponent {...sharedProps} />;
