@@ -10,6 +10,8 @@ namespace facebook::react {
 inline folly::dynamic toDynamic(const EnrichedMarkdownTextProps &props) {
   folly::dynamic serializedProps = folly::dynamic::object();
   serializedProps["markdown"] = props.markdown;
+  serializedProps["linkRegex"] = toDynamic(props.linkRegex);
+  serializedProps["inlineCodeLinkRegex"] = toDynamic(props.inlineCodeLinkRegex);
   serializedProps["markdownStyle"] = toDynamic(props.markdownStyle);
   serializedProps["md4cFlags"] = toDynamic(props.md4cFlags);
   serializedProps["allowFontScaling"] = props.allowFontScaling;
@@ -41,6 +43,8 @@ inline folly::dynamic toDynamic(const EnrichedMarkdownTextProps &props) {
 inline folly::dynamic toDynamic(const EnrichedMarkdownProps &props) {
   folly::dynamic serializedProps = folly::dynamic::object();
   serializedProps["markdown"] = props.markdown;
+  serializedProps["linkRegex"] = toDynamic(props.linkRegex);
+  serializedProps["inlineCodeLinkRegex"] = toDynamic(props.inlineCodeLinkRegex);
   serializedProps["markdownStyle"] = toDynamic(props.markdownStyle);
   serializedProps["md4cFlags"] = toDynamic(props.md4cFlags);
   serializedProps["allowFontScaling"] = props.allowFontScaling;
