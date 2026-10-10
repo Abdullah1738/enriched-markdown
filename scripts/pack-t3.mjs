@@ -90,7 +90,7 @@ try {
       {
         repository: 'https://github.com/juliusmarminge/enriched-markdown',
         commit: git('rev-parse', 'HEAD'),
-        upstreamCommit: '7afb1b0eb9b6f842e4853216adcb955aac187bac',
+        upstreamCommit: '678a5a99ade0c05a190e90a071a5702df0a46931',
         version: pkg.version,
       },
       null,
