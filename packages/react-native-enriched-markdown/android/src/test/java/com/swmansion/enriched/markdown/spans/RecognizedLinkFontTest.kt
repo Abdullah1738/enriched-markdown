@@ -37,14 +37,29 @@ class RecognizedLinkFontTest {
   }
 
   @Test
-  fun recognizedCodeRetainsCodeFontAndSizeWithMatchingVariant() {
+  fun recognizedCodeUsesAnExplicitVariantFont() {
     val originalFont = Typeface.create("sans-serif", Typeface.BOLD)
     val paint =
       TextPaint().apply {
         typeface = originalFont
         textSize = 23f
       }
-    LinkSpan("ref:one", null, null, styleCache(), block, context, preserveCodeFont = true, recognizedLink = true)
+    LinkSpan("ref:one", null, null, styleCache(), block, context, keepsCodeFont = true, recognizedLink = true)
+      .updateDrawState(paint)
+    assertEquals(Typeface.create("monospace", Typeface.NORMAL), paint.typeface)
+    assertEquals(block.fontSize, paint.textSize, 0f)
+    assertEquals(Color.BLUE, paint.color)
+  }
+
+  @Test
+  fun recognizedCodeKeepsItsFontWhenNoLinkFontIsConfigured() {
+    val originalFont = Typeface.create("sans-serif", Typeface.BOLD)
+    val paint =
+      TextPaint().apply {
+        typeface = originalFont
+        textSize = 23f
+      }
+    LinkSpan("ref:one", null, null, styleCache(withLinkFonts = false), block, context, recognizedLink = true, keepsCodeFont = true)
       .updateDrawState(paint)
     assertSame(originalFont, paint.typeface)
     assertEquals(23f, paint.textSize, 0f)
@@ -92,7 +107,7 @@ class RecognizedLinkFontTest {
     )
   }
 
-  private fun styleCache(): SpanStyleCache {
+  private fun styleCache(withLinkFonts: Boolean = true): SpanStyleCache {
     DisplayMetricsHolder.initDisplayMetricsIfNotInitialized(context)
 
     fun element() =
@@ -126,13 +141,13 @@ class RecognizedLinkFontTest {
     val style = JavaOnlyMap()
     listOf("paragraph", "strong", "em", "strikethrough", "code", "superscript", "subscript", "highlight")
       .forEach { style.putMap(it, element()) }
-    style.putMap("link", element().apply { putString("fontFamily", "serif") })
+    style.putMap("link", element().apply { putString("fontFamily", if (withLinkFonts) "serif" else "") })
     style.putArray(
       "linkVariants",
       JavaOnlyArray.of(
         element().apply {
           putString("pattern", "^ref:")
-          putString("fontFamily", "monospace")
+          putString("fontFamily", if (withLinkFonts) "monospace" else "")
           putInt("color", Color.BLUE)
         },
       ),
