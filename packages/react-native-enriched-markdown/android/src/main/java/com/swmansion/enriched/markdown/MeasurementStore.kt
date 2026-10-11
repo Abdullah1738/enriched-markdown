@@ -547,7 +547,7 @@ object MeasurementStore {
           parseImageSources(props.getArrayOrNull("imageSources")),
         )
       val slotsEnabled = props.getBooleanOrDefault("enableMediaSlots", false)
-      val assets = if (slotsEnabled) DocumentAssets.collect(ast) else null
+      val assets = if (slotsEnabled) DocumentAssets.collect(sourceAST) else null
       val mediaSlots =
         assets?.let {
           mediaSlotsForDocument(

@@ -549,9 +549,10 @@ class EnrichedMarkdown(
             return@execute
           }
 
-        val assets = if (assetEventsEnabled || slotsEnabled || sourcesEnabled) DocumentAssets.collect(ast) else null
-        val mediaSlots = assets?.let { mediaSlotsForDocument(it, slotsEnabled, revision, overrideRevision, overrides) } ?: emptyMap()
         val sourceAST = withImageSources(ast, sourcesEnabled, revision, sourcesRevision, sourcesContinuityStart, sources)
+        // Image source resolution copies the tree; occurrence lookup must use those copied nodes.
+        val assets = if (assetEventsEnabled || slotsEnabled || sourcesEnabled) DocumentAssets.collect(sourceAST) else null
+        val mediaSlots = assets?.let { mediaSlotsForDocument(it, slotsEnabled, revision, overrideRevision, overrides) } ?: emptyMap()
         val segments = splitASTIntoSegments(sourceAST, mediaSlots, assets)
         val renderedSegments =
           MarkdownSegmentRenderer.render(
