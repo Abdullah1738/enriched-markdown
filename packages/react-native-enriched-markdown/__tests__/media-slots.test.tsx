@@ -58,6 +58,39 @@ function setup(element: ReactElement) {
   return { root, native, manifest };
 }
 
+it.each(['text', 'inlineCode'] as const)(
+  'refreshes the accepted asset manifest when %s recognition changes',
+  (kind) => {
+    const onDocumentAssets = jest.fn();
+    const element = (pattern?: RegExp) => (
+      <EnrichedMarkdownText
+        markdown="ref:one ![image](same)"
+        flavor="github"
+        linkRecognition={pattern ? { [kind]: pattern } : undefined}
+        onDocumentAssets={onDocumentAssets}
+      />
+    );
+    const { root, native, manifest } = setup(element());
+    const first = native().props.documentRevision;
+    manifest(first, [image('asset-0')]);
+
+    act(() => root.render(element(/ref:\w+/)));
+    const second = native().props.documentRevision;
+    expect(second).toBeGreaterThan(first);
+    manifest(first, [image('stale')]);
+    expect(onDocumentAssets).toHaveBeenCalledTimes(1);
+    manifest(second, [image('asset-1')]);
+    expect(onDocumentAssets).toHaveBeenLastCalledWith({
+      revision: second,
+      assets: [image('asset-1')],
+    });
+
+    act(() => root.render(element(new RegExp('ref:\\w+'))));
+    manifest(second, [image('asset-1')]);
+    expect(onDocumentAssets).toHaveBeenCalledTimes(2);
+  }
+);
+
 it('uses native occurrence IDs, retaining null fallback and unsupported placements', () => {
   const onDocumentAssets = jest.fn();
   const renderMedia = jest.fn((asset) =>

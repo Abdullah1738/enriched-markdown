@@ -472,6 +472,7 @@ export const EnrichedMarkdownText = ({
       streamingAnimation,
       normalizedStreamingConfig,
       flavor,
+      nativeLinkRecognition,
       !!renderMedia,
       !!onDocumentAssets,
       !!resolveImageSource,
