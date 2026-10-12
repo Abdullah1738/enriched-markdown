@@ -87,14 +87,17 @@ static inline bool ENRMPropsNeedExactStreamingMeasurement(const PropsT &oldProps
  * `ENRMMeasureSegmentedMarkdownViewFree`); the resolved view is still handed
  * to the block for strategies that can use it. `fontScale` handed to the
  * block is the real multiplier even when streaming skips the cache —
- * rendering must always use it.
+ * rendering must always use it. `allowMeasurementCache` lets a caller skip the
+ * props-keyed cache when view state outside the props changes the size (code
+ * blocks the user wrapped).
  */
 template <typename PropsT, typename ViewT>
 static inline Size
 ENRMMeasureMarkdownContent(const PropsT &typedProps, const std::shared_ptr<void> &componentViewRef, int receivedCounter,
                            int &lastExactMeasurementCounter, CGSize &lastExactMeasurementSize, MarkdownFlavor flavor,
                            const LayoutContext &layoutContext, const LayoutConstraints &layoutConstraints,
-                           CGSize (^measureUncached)(ViewT *view, CGFloat maxWidth, CGFloat fontScale))
+                           CGSize (^measureUncached)(ViewT *view, CGFloat maxWidth, CGFloat fontScale),
+                           bool allowMeasurementCache = true)
 {
   CGFloat maxWidth = layoutConstraints.maximumSize.width;
 
@@ -116,7 +119,7 @@ ENRMMeasureMarkdownContent(const PropsT &typedProps, const std::shared_ptr<void>
     }
   }
 
-  const bool shouldUseMeasurementCache = !typedProps.streamingAnimation;
+  const bool shouldUseMeasurementCache = !typedProps.streamingAnimation && allowMeasurementCache;
   CGFloat fontScale = ENRMFontScaleForMeasurement(typedProps.allowFontScaling, layoutContext);
 
   if (shouldUseMeasurementCache && !typedProps.markdown.empty()) {

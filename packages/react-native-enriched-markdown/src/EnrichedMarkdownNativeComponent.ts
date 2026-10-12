@@ -598,6 +598,12 @@ export interface NativeProps extends ViewProps {
    */
   enableCodeBlockPress?: CodegenTypes.WithDefault<boolean, false>;
   /**
+   * Shows a per-block line wrap toggle next to the copy button in fenced code
+   * block headers. Each block starts unwrapped.
+   * @default false
+   */
+  enableCodeBlockWrapToggle?: CodegenTypes.WithDefault<boolean, false>;
+  /**
    * Callback fired when a math expression cannot be parsed or rendered by the
    * LaTeX engine. Receives the raw LaTeX `source` of the failing inline span or
    * block (no delimiters), the engine's error `message` (empty when none), and

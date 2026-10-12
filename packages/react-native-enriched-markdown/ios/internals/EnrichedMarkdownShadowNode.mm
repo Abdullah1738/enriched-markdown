@@ -62,13 +62,20 @@ Size EnrichedMarkdownShadowNode::measureContent(const LayoutContext &layoutConte
                                                    ? NSWritingDirectionRightToLeft
                                                    : NSWritingDirectionLeftToRight;
 
+  // Wrapped code blocks are view state, not props, so they bypass the props-keyed cache.
+  const auto componentViewRef = getStateData().getComponentViewRef();
+  RCTInternalGenericWeakWrapper *weakWrapper = (RCTInternalGenericWeakWrapper *)unwrapManagedObject(componentViewRef);
+  EnrichedMarkdown *view = weakWrapper ? (EnrichedMarkdown *)weakWrapper.object : nil;
+  NSSet<NSNumber *> *wrappedCodeBlocks = typedProps.enableCodeBlockWrapToggle ? view.wrappedCodeBlockIndices : nil;
+
   return ENRMMeasureMarkdownContent<EnrichedMarkdownProps, EnrichedMarkdown>(
-      typedProps, getStateData().getComponentViewRef(), receivedCounter, lastExactMeasurementCounter_,
-      lastExactMeasurementSize_, MarkdownFlavor::GitHub, layoutContext, layoutConstraints,
-      ^(EnrichedMarkdown *view, CGFloat maxWidth, CGFloat fontScale) {
+      typedProps, componentViewRef, receivedCounter, lastExactMeasurementCounter_, lastExactMeasurementSize_,
+      MarkdownFlavor::GitHub, layoutContext, layoutConstraints,
+      ^(EnrichedMarkdown *measuredView, CGFloat maxWidth, CGFloat fontScale) {
         return ENRMMeasureSegmentedMarkdownViewFree(*props, maxWidth, fontScale, pointScaleFactor,
-                                                    resolvedLayoutDirection);
-      });
+                                                    resolvedLayoutDirection, wrappedCodeBlocks);
+      },
+      wrappedCodeBlocks.count == 0);
 }
 
 } // namespace facebook::react

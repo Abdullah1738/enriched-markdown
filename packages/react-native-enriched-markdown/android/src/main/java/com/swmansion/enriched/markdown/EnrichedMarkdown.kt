@@ -244,6 +244,45 @@ class EnrichedMarkdown(
       dynamicProps.enableCodeBlockPress = value
     }
 
+  // Document-order indexes of the top-level code blocks the user wrapped. Kept
+  // across renders so streaming and segment recreation keep the choice, and
+  // mirrored into MeasurementStore so the Yoga measure pass sees it.
+  private var wrappedCodeBlocks: Set<Int> = emptySet()
+
+  var enableCodeBlockWrapToggle: Boolean = false
+    set(value) {
+      if (field == value) return
+      field = value
+      val hadWrappedBlocks = wrappedCodeBlocks.isNotEmpty()
+      if (!value) setWrappedCodeBlocks(emptySet())
+      syncCodeBlockWrapState()
+      if (hadWrappedBlocks && !value) onImageLayoutChanged()
+    }
+
+  private fun setWrappedCodeBlocks(value: Set<Int>) {
+    wrappedCodeBlocks = value
+    MeasurementStore.updateWrappedCodeBlocks(id, value)
+  }
+
+  private fun syncCodeBlockWrapState() {
+    var codeBlockIndex = 0
+    segmentViews.forEach { view ->
+      if (view is CodeBlockContainerView) {
+        view.onWrapToggle = ::codeBlockDidToggleWrap
+        view.showsWrapButton = enableCodeBlockWrapToggle
+        view.wrapped = enableCodeBlockWrapToggle && codeBlockIndex in wrappedCodeBlocks
+        codeBlockIndex++
+      }
+    }
+  }
+
+  private fun codeBlockDidToggleWrap(view: CodeBlockContainerView) {
+    val codeBlockIndex = segmentViews.filterIsInstance<CodeBlockContainerView>().indexOf(view)
+    if (codeBlockIndex < 0) return
+    setWrappedCodeBlocks(if (view.wrapped) wrappedCodeBlocks + codeBlockIndex else wrappedCodeBlocks - codeBlockIndex)
+    onImageLayoutChanged()
+  }
+
   init {
     segmentViewFactory = RootFactory()
   }
@@ -604,6 +643,7 @@ class EnrichedMarkdown(
         view.pending = pendingCodeBlockSegment != null && index == segmentViews.size - 1
       }
     }
+    syncCodeBlockWrapState()
 
     if (width > 0) {
       val heightBefore = computeSegmentsTotalHeight()

@@ -330,6 +330,14 @@ class EnrichedMarkdownManager :
     view?.enableCodeBlockPress = enableCodeBlockPress
   }
 
+  @ReactProp(name = "enableCodeBlockWrapToggle", defaultBoolean = false)
+  override fun setEnableCodeBlockWrapToggle(
+    view: EnrichedMarkdown?,
+    enableCodeBlockWrapToggle: Boolean,
+  ) {
+    view?.enableCodeBlockWrapToggle = enableCodeBlockWrapToggle
+  }
+
   @ReactProp(name = "lineBreakStrategyIOS")
   override fun setLineBreakStrategyIOS(
     view: EnrichedMarkdown?,

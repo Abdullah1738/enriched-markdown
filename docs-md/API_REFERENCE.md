@@ -282,6 +282,14 @@ Works in both flavors: `flavor="github"` fires on the container-based code block
 />
 ```
 
+### `enableCodeBlockWrapToggle`
+
+Adds a line wrap toggle next to the copy button in each fenced code block header (`flavor="github"`). Blocks start unwrapped and scroll horizontally; tapping the toggle wraps that block's lines at the block width, and tapping again goes back to scrolling. Each block keeps its own state across streaming updates, but not across a remount. Code blocks inside blockquotes keep scrolling. VoiceOver and TalkBack announce it as "Wrap lines" / "Disable line wrap".
+
+| Type      | Default Value | Platform     |
+| --------- | ------------- | ------------ |
+| `boolean` | `false`       | iOS, Android |
+
 ### `enableBlockContextMenu`
 
 Controls the long-press copy popup on code blocks, tables, block math, and blockquotes/admonitions.
