@@ -284,7 +284,7 @@ Works in both flavors: `flavor="github"` fires on the container-based code block
 
 ### `enableCodeBlockWrapToggle`
 
-Adds a line wrap toggle next to the copy button in each fenced code block header (`flavor="github"`). Blocks start unwrapped and scroll horizontally; tapping the toggle wraps that block's lines at the block width, and tapping again goes back to scrolling. Each block keeps its own state across streaming updates, but not across a remount. Code blocks inside blockquotes keep scrolling. VoiceOver and TalkBack announce it as "Wrap lines" / "Disable line wrap".
+Adds a line wrap toggle next to the copy button in each fenced code block header (`flavor="github"`). Blocks start unwrapped and scroll horizontally; tapping the toggle wraps that block's lines at the block width, and tapping again goes back to scrolling. The state belongs to the block's position in the document: it survives streaming appends and resets when the markdown is replaced rather than appended to. Code blocks inside blockquotes and admonitions have no toggle and keep scrolling. The toggle's spoken labels come from [`accessibilityLabels.codeBlock`](#accessibilitylabels).
 
 | Type      | Default Value | Platform     |
 | --------- | ------------- | ------------ |
@@ -789,6 +789,10 @@ interface AccessibilityLabels {
   };
   math?: {
     equation?: string;             // "Math: {latex}"
+  };
+  codeBlock?: {                    // enableCodeBlockWrapToggle
+    wrap?: string;                 // "Wrap lines"
+    unwrap?: string;               // "Disable line wrap"
   };
   rotor?: {                        // iOS only
     headings?: string;             // "Headings"

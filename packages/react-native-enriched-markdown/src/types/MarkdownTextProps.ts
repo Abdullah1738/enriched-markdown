@@ -302,8 +302,10 @@ export interface EnrichedMarkdownTextProps extends Omit<ViewProps, 'style'> {
   /**
    * Shows a line wrap toggle next to the copy button in each fenced code block
    * header. Every block starts unwrapped (horizontal scroll) and toggles on its
-   * own; the choice survives streaming updates but not a remount. Code blocks
-   * inside blockquotes keep scrolling.
+   * own. The state belongs to the block's position in the document: it survives
+   * streaming appends and resets when the markdown is replaced. Code blocks
+   * inside blockquotes and admonitions have no toggle and keep scrolling. The
+   * toggle's spoken labels come from `accessibilityLabels.codeBlock`.
    *
    * Only applies when `flavor="github"`.
    * @default false
