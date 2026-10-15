@@ -1261,9 +1261,13 @@ static char kENRMSegmentFadeAnimatorKey;
   if (markdownChanged) {
     _dirtyFlags |= ENRMDirtyRender;
     // Wrap state is keyed by block position, so it only stays meaningful while
-    // the document grows in place (streaming appends). Anything else - a recycled
-    // cell, an edited message, a block inserted above - starts unwrapped.
-    if (self.wrappedCodeBlockIndices.count > 0 && newViewProps.markdown.rfind(oldViewProps.markdown, 0) != 0) {
+    // the document grows in place. Streaming may rewrite its unfinished last line
+    // (an HTML tag closing, a link relabeled); anything earlier changing - a
+    // recycled cell, an edited message, a block inserted above - starts unwrapped.
+    const auto &previous = oldViewProps.markdown;
+    const auto lastNewline = previous.rfind('\n');
+    const auto stablePrefix = lastNewline == std::string::npos ? std::string() : previous.substr(0, lastNewline);
+    if (self.wrappedCodeBlockIndices.count > 0 && newViewProps.markdown.rfind(stablePrefix, 0) != 0) {
       self.wrappedCodeBlockIndices = [NSSet set];
       _dirtyFlags |= ENRMDirtyForceHeight;
     }

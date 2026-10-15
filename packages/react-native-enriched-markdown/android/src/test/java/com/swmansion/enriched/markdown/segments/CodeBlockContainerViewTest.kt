@@ -67,6 +67,7 @@ class CodeBlockContainerViewTest {
     val block = "```kotlin\nval a = 1\n```\n"
     assertTrue("streaming append", keepsCodeBlockWrapState("Intro\n\n```kotlin\nval a", "Intro\n\n$block"))
     assertTrue("identical markdown", keepsCodeBlockWrapState("Intro\n\n$block", "Intro\n\n$block"))
+    assertTrue("unfinished last line rewritten", keepsCodeBlockWrapState("$block\nSee <summ", "$block\nSee \n\n**Details**"))
     assertFalse("replaced document", keepsCodeBlockWrapState("Intro\n\n$block", "Other\n\n$block"))
     assertFalse("block inserted above", keepsCodeBlockWrapState("Intro\n\n$block", "Intro\n\n```\nnew\n```\n\n$block"))
   }

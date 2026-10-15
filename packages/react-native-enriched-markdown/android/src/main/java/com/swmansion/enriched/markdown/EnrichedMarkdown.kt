@@ -54,12 +54,13 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 // Code block wrap state is keyed by block position, so it only stays meaningful
-// while the document grows in place (streaming appends). Anything else - a
+// while the document grows in place. Streaming may rewrite its unfinished last
+// line (an HTML tag closing, a link relabeled); anything earlier changing - a
 // recycled cell, an edited message, a block inserted above - starts unwrapped.
 internal fun keepsCodeBlockWrapState(
   previous: String,
   next: String,
-): Boolean = next.startsWith(previous)
+): Boolean = next.startsWith(previous.substringBeforeLast('\n', ""))
 
 class EnrichedMarkdown(
   context: Context,
@@ -295,9 +296,12 @@ class EnrichedMarkdown(
     segmentViewFactory = RootFactory()
   }
 
-  fun setMarkdownContent(markdown: String) {
+  fun setMarkdownContent(
+    markdown: String,
+    keepWrapState: Boolean = false,
+  ) {
     if (currentMarkdown == markdown) return
-    if (wrappedCodeBlocks.isNotEmpty() && !keepsCodeBlockWrapState(currentMarkdown, markdown)) {
+    if (!keepWrapState && wrappedCodeBlocks.isNotEmpty() && !keepsCodeBlockWrapState(currentMarkdown, markdown)) {
       setWrappedCodeBlocks(emptySet())
       dirtyFlags += DirtyFlag.FORCE_HEIGHT
     }

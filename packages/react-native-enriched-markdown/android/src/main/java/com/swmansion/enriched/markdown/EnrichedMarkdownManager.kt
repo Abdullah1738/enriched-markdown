@@ -63,7 +63,8 @@ class EnrichedMarkdownManager :
     view.setOnTaskListItemPressCallback { taskIndex, checked, itemText ->
       val newChecked = !checked
       val updatedMarkdown = TaskListToggleUtils.toggleAtIndex(view.currentMarkdown, taskIndex, newChecked)
-      view.setMarkdownContent(updatedMarkdown)
+      // A checkbox flip keeps every code block where it was, so keep their wrap state too.
+      view.setMarkdownContent(updatedMarkdown, keepWrapState = true)
       view.commitProps()
       emitTaskListItemPress(view, taskIndex, newChecked, itemText)
     }
