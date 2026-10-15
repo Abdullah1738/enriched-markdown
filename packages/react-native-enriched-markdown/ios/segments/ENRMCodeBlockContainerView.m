@@ -180,7 +180,6 @@ static BOOL ENRMColorIsDark(RCTUIColor *color)
 // Laid-out content width, for the horizontal scroll extent. Free once the
 // cached stack exists; no separate measurement pass.
 @property (nonatomic, readonly) CGFloat usedWidth;
-@property (nonatomic, readonly) CGFloat usedHeight;
 #if TARGET_OS_OSX
 @property (nonatomic, copy, nullable) NSMenu * (^menuProvider)(void);
 #endif
@@ -252,14 +251,6 @@ static BOOL ENRMColorIsDark(RCTUIColor *color)
     return 0;
   }
   return ceil([_layoutManager usedRectForTextContainer:_textContainer].size.width);
-}
-
-- (CGFloat)usedHeight
-{
-  if (!_layoutManager) {
-    return 0;
-  }
-  return ceil([_layoutManager usedRectForTextContainer:_textContainer].size.height);
 }
 
 - (void)drawRect:(CGRect)rect
