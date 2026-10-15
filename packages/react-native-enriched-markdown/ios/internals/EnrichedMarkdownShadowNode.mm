@@ -50,6 +50,17 @@ void EnrichedMarkdownShadowNode::dirtyLayoutIfNeeded()
   }
 }
 
+// Order-independent fingerprint of the wrapped set for the measurement cache
+// key: 0 for none, and {0} hashes apart from {} (HashUtils::combine is not 0 at 0).
+static size_t ENRMWrappedCodeBlocksFingerprint(NSSet<NSNumber *> *wrappedCodeBlocks)
+{
+  size_t h = 0;
+  for (NSNumber *index in [wrappedCodeBlocks.allObjects sortedArrayUsingSelector:@selector(compare:)]) {
+    HashUtils::hash_one(h, index.unsignedLongValue);
+  }
+  return h;
+}
+
 Size EnrichedMarkdownShadowNode::measureContent(const LayoutContext &layoutContext,
                                                 const LayoutConstraints &layoutConstraints) const
 {
@@ -62,7 +73,7 @@ Size EnrichedMarkdownShadowNode::measureContent(const LayoutContext &layoutConte
                                                    ? NSWritingDirectionRightToLeft
                                                    : NSWritingDirectionLeftToRight;
 
-  // Wrapped code blocks are view state, not props, so they bypass the props-keyed cache.
+  // Wrapped code blocks are view state, not props, so they join the cache key by fingerprint.
   const auto componentViewRef = getStateData().getComponentViewRef();
   RCTInternalGenericWeakWrapper *weakWrapper = (RCTInternalGenericWeakWrapper *)unwrapManagedObject(componentViewRef);
   EnrichedMarkdown *view = weakWrapper ? (EnrichedMarkdown *)weakWrapper.object : nil;
@@ -75,7 +86,7 @@ Size EnrichedMarkdownShadowNode::measureContent(const LayoutContext &layoutConte
         return ENRMMeasureSegmentedMarkdownViewFree(*props, maxWidth, fontScale, pointScaleFactor,
                                                     resolvedLayoutDirection, wrappedCodeBlocks);
       },
-      wrappedCodeBlocks.count == 0);
+      ENRMWrappedCodeBlocksFingerprint(wrappedCodeBlocks));
 }
 
 } // namespace facebook::react
