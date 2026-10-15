@@ -27,6 +27,7 @@ import android.widget.ImageView
 import androidx.appcompat.widget.AppCompatImageButton
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.graphics.PathParser
+import com.swmansion.enriched.markdown.accessibility.AccessibilityLabels
 import com.swmansion.enriched.markdown.parser.MarkdownASTNode
 import com.swmansion.enriched.markdown.spans.LineHeightSpan
 import com.swmansion.enriched.markdown.styles.CodeBlockStyle
@@ -71,6 +72,14 @@ class CodeBlockContainerView(
   // the root mutates the one instance in place, so this view and any sibling
   // created later see the same current values. See DynamicBlockProps.
   var dynamicProps: DynamicBlockProps = DynamicBlockProps()
+
+  // Wrap toggle labels (see AccessibilityLabels); the copy label lives on dynamicProps.
+  var accessibilityLabels: AccessibilityLabels = AccessibilityLabels()
+    set(value) {
+      if (field == value) return
+      field = value
+      updateWrapButtonAppearance()
+    }
 
   private var code: String = ""
   private var language: String? = null
@@ -223,7 +232,7 @@ class CodeBlockContainerView(
   private fun updateWrapButtonAppearance() {
     // Full-strength tint marks the toggle as on; off matches the copy button.
     wrapIcon.setColor(if (wrapped) codeBlockStyle.color else secondaryColor(codeBlockStyle.color))
-    wrapButton.contentDescription = if (wrapped) DISABLE_LINE_WRAP_LABEL else WRAP_LINES_LABEL
+    wrapButton.contentDescription = if (wrapped) accessibilityLabels.codeBlockUnwrap else accessibilityLabels.codeBlockWrap
   }
 
   private fun toggleWrap() {
@@ -450,9 +459,6 @@ class CodeBlockContainerView(
   }
 
   companion object {
-    private const val WRAP_LINES_LABEL = "Wrap lines"
-    private const val DISABLE_LINE_WRAP_LABEL = "Disable line wrap"
-
     private val WRAP_TEXT_PATH: Path by lazy {
       PathParser.createPathFromPathData(
         "M4 19h6v-2H4v2zM20 5H4v2h16V5zm-3 6H4v2h13.25c1.1 0 2 .9 2 2s-.9 2-2 2H15v-2l-3 3 3 3v-2h2c2.21 0 4-1.79 4-4s-1.79-4-4-4z",

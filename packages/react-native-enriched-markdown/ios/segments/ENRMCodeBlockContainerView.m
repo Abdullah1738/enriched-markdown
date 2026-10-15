@@ -1,4 +1,5 @@
 #import "ENRMCodeBlockContainerView.h"
+#import "ENRMAccessibilityLabels.h"
 #import "ENRMCodeBlockContent.h"
 #import "ENRMCodeBlockHighlighter.h"
 #import "ENRMHorizontalScrollView.h"
@@ -28,8 +29,6 @@ static const CGFloat kENRMHeaderLabelScale = 0.85;
 static const CGFloat kENRMHeaderIconScale = 0.72;
 static const CGFloat kENRMHeaderSecondaryAlpha = 0.6;
 static const CGFloat kENRMHeaderDividerAlpha = 0.2;
-static NSString *const kENRMWrapLinesLabel = @"Wrap lines";
-static NSString *const kENRMDisableLineWrapLabel = @"Disable line wrap";
 
 // Height geometry and code-run construction shared by the instance layout path
 // and the view-free measureHeightForCodeBlockNode:, so the two cannot drift.
@@ -490,7 +489,18 @@ static BOOL ENRMColorIsDark(RCTUIColor *color)
 
 - (NSString *)wrapActionLabel
 {
-  return _wrapped ? kENRMDisableLineWrapLabel : kENRMWrapLinesLabel;
+  return _wrapped ? _accessibilityLabels.codeBlockUnwrap : _accessibilityLabels.codeBlockWrap;
+}
+
+- (void)setAccessibilityLabels:(ENRMAccessibilityLabels *)labels
+{
+  if (_accessibilityLabels == labels) {
+    return;
+  }
+  _accessibilityLabels = labels;
+#if !TARGET_OS_OSX
+  [self updateWrapButtonAppearance];
+#endif
 }
 
 - (void)setWrapped:(BOOL)wrapped
@@ -823,7 +833,7 @@ static BOOL ENRMColorIsDark(RCTUIColor *color)
                                                                   target:self
                                                                 selector:@selector(performCopyAccessibilityAction:)]];
   }
-  if (_showsWrapButton) {
+  if (_showsWrapButton && [self wrapActionLabel].length > 0) {
     [actions addObject:[[UIAccessibilityCustomAction alloc] initWithName:[self wrapActionLabel]
                                                                   target:self
                                                                 selector:@selector(performWrapAccessibilityAction:)]];

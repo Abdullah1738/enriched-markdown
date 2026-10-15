@@ -505,6 +505,9 @@ class EnrichedMarkdown(
     segmentViews.filterIsInstance<TableContainerView>().forEach {
       it.accessibilityLabels = labels
     }
+    segmentViews.filterIsInstance<CodeBlockContainerView>().forEach {
+      it.accessibilityLabels = labels
+    }
     mathContainerClass?.let { mathClass ->
       segmentViews.filter { mathClass.isInstance(it) }.forEach { view ->
         runCatching {

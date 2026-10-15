@@ -4,6 +4,7 @@
 #import "StyleConfig.h"
 
 @class MarkdownASTNode;
+@class ENRMAccessibilityLabels;
 @class ENRMCodeBlockContainerView;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -50,6 +51,10 @@ typedef void (^ENRMCodeBlockWrapToggleBlock)(ENRMCodeBlockContainerView *view);
 // read live at use-time. Set to the root's shared instance at creation so a code
 // block added after a toggle is born current. See ENRMDynamicBlockProps.
 @property (nonatomic, strong) ENRMDynamicBlockProps *dynamicProps;
+
+// Wrap toggle labels (see ENRMAccessibilityLabels); the copy label lives on
+// dynamicProps.
+@property (nonatomic, strong, nullable) ENRMAccessibilityLabels *accessibilityLabels;
 
 // Fired when the code is copied (header button, context-menu Copy, or the
 // VoiceOver copy action); set by the host to bridge up to the JS onCopyPress
