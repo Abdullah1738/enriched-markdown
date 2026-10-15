@@ -53,6 +53,14 @@ import java.util.EnumSet
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
+// Code block wrap state is keyed by block position, so it only stays meaningful
+// while the document grows in place (streaming appends). Anything else - a
+// recycled cell, an edited message, a block inserted above - starts unwrapped.
+internal fun keepsCodeBlockWrapState(
+  previous: String,
+  next: String,
+): Boolean = next.startsWith(previous)
+
 class EnrichedMarkdown(
   context: Context,
 ) : ContainerNodeView(context),
@@ -289,6 +297,10 @@ class EnrichedMarkdown(
 
   fun setMarkdownContent(markdown: String) {
     if (currentMarkdown == markdown) return
+    if (wrappedCodeBlocks.isNotEmpty() && !keepsCodeBlockWrapState(currentMarkdown, markdown)) {
+      setWrappedCodeBlocks(emptySet())
+      dirtyFlags += DirtyFlag.FORCE_HEIGHT
+    }
     currentMarkdown = markdown
     ++currentRenderId
     renderPending = true

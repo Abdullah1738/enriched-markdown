@@ -1260,6 +1260,13 @@ static char kENRMSegmentFadeAnimatorKey;
   BOOL markdownChanged = oldViewProps.markdown != newViewProps.markdown;
   if (markdownChanged) {
     _dirtyFlags |= ENRMDirtyRender;
+    // Wrap state is keyed by block position, so it only stays meaningful while
+    // the document grows in place (streaming appends). Anything else - a recycled
+    // cell, an edited message, a block inserted above - starts unwrapped.
+    if (self.wrappedCodeBlockIndices.count > 0 && newViewProps.markdown.rfind(oldViewProps.markdown, 0) != 0) {
+      self.wrappedCodeBlockIndices = [NSSet set];
+      _dirtyFlags |= ENRMDirtyForceHeight;
+    }
   }
 
   NSDictionary *mediaOverrides = ENRMMediaOverridesFromProps(newViewProps);
